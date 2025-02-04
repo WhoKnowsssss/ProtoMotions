@@ -38,8 +38,8 @@ from isaac_utils import rotations
 
 import xml.etree.ElementTree as ET
 
-from omni.isaac.core.prims import RigidPrimView
-from omni.isaac.core.utils.stage import get_current_stage
+from isaacsim.core.prims import RigidPrim
+from isaacsim.core.utils.stage import get_current_stage
 from omni.physx.scripts import physicsUtils, utils
 from pxr import UsdGeom, Vt, UsdPhysics, PhysxSchema, Gf
 

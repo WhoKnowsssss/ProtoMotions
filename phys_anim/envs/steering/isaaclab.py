@@ -27,10 +27,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import torch
-import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.markers import VisualizationMarkersCfg
-from omni.isaac.lab.markers import VisualizationMarkers
-from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR
+import isaaclab.sim as sim_utils
+from isaaclab.markers import VisualizationMarkersCfg
+from isaaclab.markers import VisualizationMarkers
+from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
 from isaac_utils import rotations
 from phys_anim.envs.steering.common import BaseSteering

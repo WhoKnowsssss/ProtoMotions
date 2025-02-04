@@ -29,9 +29,9 @@
 from typing import TYPE_CHECKING
 import torch
 
-import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.scene import InteractiveScene
-from omni.isaac.lab.sim import SimulationContext, PhysxCfg
+import isaaclab.sim as sim_utils
+from isaaclab.scene import InteractiveScene
+from isaaclab.sim import SimulationContext, PhysxCfg
 
 from phys_anim.envs.base_interface.isaaclab_utils.robots import (
     SMPLSceneCfg,
@@ -117,7 +117,7 @@ class SimBaseInterface(BaseInterface, Humanoid):
             self.setup_keyboard()
 
     def setup_keyboard(self):
-        from omni.isaac.lab.devices.keyboard.se2_keyboard import Se2Keyboard
+        from isaaclab.devices.keyboard.se2_keyboard import Se2Keyboard
 
         self.keyboard_interface = Se2Keyboard()
         self.keyboard_interface.add_callback("R", self.force_reset)

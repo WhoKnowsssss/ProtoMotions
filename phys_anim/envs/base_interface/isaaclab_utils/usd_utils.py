@@ -32,9 +32,9 @@ import os
 from pathlib import Path
 
 import omni
-from omni.isaac.core.prims import XFormPrim
-from omni.isaac.core.utils.prims import get_prim_at_path
-from omni.isaac.core.utils.stage import get_current_stage
+from isaacsim.core.prims import SingleXFormPrim
+from isaacsim.core.utils.prims import get_prim_at_path
+from isaacsim.core.utils.stage import get_current_stage
 import carb
 from pxr import Gf, PhysxSchema, Sdf, UsdLux, UsdPhysics, UsdShade, UsdGeom
 
@@ -139,7 +139,7 @@ def add_terrain_to_stage(stage, vertices, triangles, position=None, orientation=
     # Assign material to mesh
     UsdShade.MaterialBindingAPI(terrain_mesh).Bind(material)
 
-    terrain = XFormPrim(
+    terrain = SingleXFormPrim(
         prim_path="/World/terrain",
         name="terrain",
         position=position,
@@ -152,8 +152,8 @@ def add_terrain_to_stage(stage, vertices, triangles, position=None, orientation=
     physx_collision_api.GetRestOffsetAttr().Set(0.00)
 
     # # create parent prim
-    # import omni.isaac.core.utils.prims as prim_utils
-    # import omni.isaac.lab.sim as sim_utils
+    # import isaacsim.core.utils.prims as prim_utils
+    # import isaaclab.sim as sim_utils
     #
     # prim_path = "/World/terrain"
     # prim_utils.create_prim(prim_path, "Xform")

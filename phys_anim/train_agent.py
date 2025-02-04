@@ -48,7 +48,7 @@ for arg in sys.argv:
 
             backbone = "isaacgym"
         elif "isaaclab" in arg.split("=")[-1]:
-            from omni.isaac.lab.app import AppLauncher
+            from isaaclab.app import AppLauncher
 
             backbone = "isaaclab"
 

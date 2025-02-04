@@ -31,8 +31,8 @@ import torch
 from phys_anim.envs.path_following.common import BasePathFollowing
 from phys_anim.envs.base_task.isaaclab import TaskHumanoid
 
-import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.markers import VisualizationMarkers, VisualizationMarkersCfg
+import isaaclab.sim as sim_utils
+from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
 
 
 class PathFollowingHumanoid(BasePathFollowing, TaskHumanoid):

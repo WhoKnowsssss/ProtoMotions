@@ -33,8 +33,8 @@ from phys_anim.envs.humanoid.isaaclab import Humanoid
 
 from isaac_utils import rotations
 
-import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.markers import VisualizationMarkers, VisualizationMarkersCfg
+import isaaclab.sim as sim_utils
+from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
 
 
 class MimicHumanoid(BaseMimic, Humanoid):

@@ -1,10 +1,10 @@
-from omni.isaac.lab.actuators import ImplicitActuatorCfg
-import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.actuators import ImplicitActuatorCfg
-from omni.isaac.lab.assets import ArticulationCfg, AssetBaseCfg
-from omni.isaac.lab.utils import configclass
-from omni.isaac.lab.scene import InteractiveSceneCfg
-from omni.isaac.lab.sensors import ContactSensorCfg
+from isaaclab.actuators import ImplicitActuatorCfg
+import isaaclab.sim as sim_utils
+from isaaclab.actuators import ImplicitActuatorCfg
+from isaaclab.assets import ArticulationCfg, AssetBaseCfg
+from isaaclab.utils import configclass
+from isaaclab.scene import InteractiveSceneCfg
+from isaaclab.sensors import ContactSensorCfg
 
 
 SMPLX_CFG = ArticulationCfg(

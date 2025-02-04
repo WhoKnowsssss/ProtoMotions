@@ -31,8 +31,8 @@ import torch
 from phys_anim.envs.masked_mimic.common import BaseMaskedMimic
 from phys_anim.envs.mimic.isaaclab import MimicHumanoid
 
-import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.markers import VisualizationMarkers, VisualizationMarkersCfg
+import isaaclab.sim as sim_utils
+from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
 
 
 class MaskedMimicHumanoid(BaseMaskedMimic, MimicHumanoid):
