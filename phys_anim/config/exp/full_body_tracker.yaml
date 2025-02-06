@@ -4,8 +4,8 @@ defaults:
   - /algo: mimic
   - /env: mimic
   - /opt/disable_discriminator  # Default mimic experiments don't use the discriminator
-  - /terrain/terrain_obs
-  - /terrain/complex
+  # - /terrain/terrain_obs
+  # - /terrain/complex
 #  - /scenes/samp
   - /opt/mimic/transformer/target_pose_with_time_obs
   - /opt/mimic/global_tracking

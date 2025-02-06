@@ -707,7 +707,7 @@ class MotionLib(DeviceDtypeModuleMixin):
                     curr_weight = sub_motion.weight
                     assert curr_weight >= 0
 
-                    assert motion_index == sub_motion.idx
+                    assert motion_index == sub_motion.idx, f"Sub motion index {sub_motion.idx} must be the same as the motion index {motion_index}"
 
                     motion_weights.append(curr_weight)
 

@@ -1,0 +1,45 @@
+motions:
+- file: KIT-smpl/424/walking_medium08_poses.npy
+  fps: 100
+  idx: 1
+  sub_motions:
+  - hml3d_id: 3217
+    idx: 1
+    labels:
+    - a person walks slowly in diagonal
+    - robot walking forward from right and ended up at left
+    - stiffly walks down stairs with no emotion or additional movements
+    timings:
+      end: 4.95
+      start: 0.0
+    weight: 1.0
+
+- file: KIT-smpl/6/WalkInClockwiseCircle09_poses.npy
+  fps: 100
+  idx: 2
+  sub_motions:
+  - hml3d_id: 3344
+    idx: 2
+    labels:
+    - a person walks forward clockwise, completing one full circle
+    - a person walks towards the left to make a circle
+    - the person walks in an oval circle from right to left and then back to right
+    timings:
+      end: 7.05
+      start: 0.0
+    weight: 1.0
+
+- file: KIT-smpl/11/WalkInCounterClockwiseCircle01_poses.npy
+  fps: 100
+  idx: 0
+  sub_motions:
+  - hml3d_id: 206
+    idx: 0
+    labels:
+    - a man walks, anti-clockwise, in a circle
+    - a person walk counter-clockwise in a circle
+    - a person walking around on circles
+    timings:
+      end: 8.2
+      start: 0.0
+    weight: 1.0

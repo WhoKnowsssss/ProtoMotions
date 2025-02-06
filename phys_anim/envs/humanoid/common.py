@@ -783,17 +783,19 @@ class BaseHumanoid(Humanoid):
     def build_termination_heights(self):
         head_term_height = self.config.head_termination_height
         termination_height = self.config.termination_height
-
         termination_heights = np.array([termination_height] * self.num_bodies)
 
-        if "smpl" in self.config.robot.asset.asset_file_name:
-            head_id = self.get_body_id("Head")
-        else:
-            head_id = self.get_body_id("head")
+        try:
+            if "smpl" in self.config.robot.asset.asset_file_name:
+                head_id = self.get_body_id("Head")
+            else:
+                head_id = self.get_body_id("head")
 
-        termination_heights[head_id] = max(
-            head_term_height, termination_heights[head_id]
-        )
+            termination_heights[head_id] = max(
+                head_term_height, termination_heights[head_id]
+            )
+        except:
+            pass
 
         asset_file = self.config.robot.asset.asset_file_name
         if "amp_humanoid_sword_shield" in asset_file:

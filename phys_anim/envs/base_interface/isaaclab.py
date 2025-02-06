@@ -36,6 +36,7 @@ from isaaclab.sim import SimulationContext, PhysxCfg
 from phys_anim.envs.base_interface.isaaclab_utils.robots import (
     SMPLSceneCfg,
     SMPLXSceneCfg,
+    G1SceneCfg
 )
 from phys_anim.envs.base_interface.common import BaseInterface
 
@@ -94,6 +95,12 @@ class SimBaseInterface(BaseInterface, Humanoid):
                 num_envs=config.num_envs,
                 env_spacing=2.0,
                 num_objects=num_objects,
+            )
+        elif self.config.robot.asset.robot_type == "g1_humanoid":
+            scene_cfg = G1SceneCfg(
+            num_envs=config.num_envs,
+            env_spacing=2.0,
+            num_objects=num_objects,
             )
         else:
             raise ValueError(

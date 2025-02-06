@@ -192,7 +192,7 @@ class PPO:
             params=list(actor.parameters()),
             _convert_="all",
         )
-
+        # breakpoint()
         self.actor, self.actor_optimizer = self.fabric.setup(actor, actor_optimizer)
         self.actor.mark_forward_method("eval_forward")
         self.actor.mark_forward_method("training_forward")
