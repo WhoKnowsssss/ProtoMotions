@@ -382,7 +382,7 @@ class BaseHumanoid(Humanoid):
                 )
             )
             self._pd_action_offset = self._pd_action_offset * 0
-            self._pd_action_scale = self._pd_action_scale * 0 + 2
+            self._pd_action_scale = self._pd_action_scale * 0 + 3
 
         super().on_environment_ready()
 
