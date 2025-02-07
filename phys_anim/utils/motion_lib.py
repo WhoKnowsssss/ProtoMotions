@@ -830,14 +830,18 @@ class MotionLib(DeviceDtypeModuleMixin):
                 dof_pos[:, joint_offset : (joint_offset + joint_size)] = formatted_joint
             elif joint_size == 1:
                 joint_q = local_rot[:, body_id]
-                joint_theta, joint_axis = torch_utils.quat_to_angle_axis(
+                roll, pitch, yaw = torch_utils.euler_xyz_from_quat(
                     joint_q, w_last=True
                 )
-                joint_theta = (
-                    joint_theta * joint_axis[..., 1]
-                )  # assume joint is always along y axis
+                # joint_theta, joint_axis = torch_utils.quat_to_angle_axis(
+                #     joint_q, w_last=True
+                # )
+                # joint_theta = (
+                #     joint_theta * joint_axis[..., 1]
+                # )  # assume joint is always along y axis
 
-                joint_theta = rotations.normalize_angle(joint_theta)
+                # joint_theta = rotations.normalize_angle(joint_theta)
+                joint_theta = roll + pitch + yaw
                 dof_pos[:, joint_offset] = joint_theta
 
             else:

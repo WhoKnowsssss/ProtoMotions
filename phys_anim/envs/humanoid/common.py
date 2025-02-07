@@ -381,6 +381,8 @@ class BaseHumanoid(Humanoid):
                     self.device,
                 )
             )
+            self._pd_action_offset = self._pd_action_offset * 0
+            self._pd_action_scale = self._pd_action_scale * 0 + 2
 
         super().on_environment_ready()
 
@@ -600,9 +602,9 @@ class BaseHumanoid(Humanoid):
         root_offset = ref_state.root_pos[:, :2].clone()
 
         ref_state.root_pos[:, :2] = 0
-        ref_state.root_pos[:, :3] += self.get_envs_respawn_position(
+        ref_state.root_pos[:, :2] += self.get_envs_respawn_position(
             env_ids, rb_pos=ref_state.rb_pos, offset=root_offset, scene_ids=scene_ids
-        )
+        )[:, :2]
 
         ref_state.rb_pos[:, :, :3] -= ref_state.rb_pos[:, 0, :3].unsqueeze(1).clone()
         ref_state.rb_pos[:, :, :3] += ref_state.root_pos.unsqueeze(1)
