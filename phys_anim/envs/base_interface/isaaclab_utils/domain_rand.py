@@ -219,6 +219,28 @@ def randomize_rigid_body_mass(
         # set the inertia tensors into the physics simulation
         robot.root_physx_view.set_inertias(inertias, env_ids)
 
+def randomize_joint_default_pos(
+    robot: RigidObject | Articulation,
+    num_envs: int,
+    pos_distribution_params: tuple[float, float] | None = None,
+    operation: Literal["add", "scale", "abs"] = "add",
+    distribution: Literal["uniform", "log_uniform", "gaussian"] = "uniform",
+):
+    """
+    Randomize the joint default positions which may be different from URDF due to calibration errors.
+    """
+    env_ids = torch.arange(num_envs, device="cpu")
+    joint_ids = torch.arange(robot.num_joints, device="cpu")
+    
+    if pos_distribution_params is not None:
+        pos = robot.data.default_joint_pos.to(robot.device).clone()
+        pos = _randomize_prop_by_op(
+            pos, pos_distribution_params, env_ids, joint_ids, operation=operation, distribution=distribution
+        )[env_ids][:, joint_ids]
+
+        if env_ids != slice(None) and joint_ids != slice(None):
+            env_ids = env_ids[:, None]
+        robot.data.default_joint_pos[env_ids, joint_ids] = pos
 
 def push_by_setting_velocity(
     robot: RigidObject | Articulation,

@@ -373,16 +373,16 @@ class BaseHumanoid(Humanoid):
             )
 
         if self.isaac_pd:
-            self._pd_action_offset, self._pd_action_scale = (
-                build_pd_action_offset_scale(
-                    self.dof_offsets,
-                    self.dof_limits_lower,
-                    self.dof_limits_upper,
-                    self.device,
-                )
-            )
-            self._pd_action_offset = self._pd_action_offset * 0
-            self._pd_action_scale = self._pd_action_scale * 0 + 3
+            # self._pd_action_offset, self._pd_action_scale = (
+            #     build_pd_action_offset_scale(
+            #         self.dof_offsets,
+            #         self.dof_limits_lower,
+            #         self.dof_limits_upper,
+            #         self.device,
+            #     )
+            # )
+            self._pd_action_offset = torch.clone(self.robot.data.default_joint_pos)
+            self._pd_action_scale = torch.zeros_like(self.dof_limits_lower) + 3
 
         super().on_environment_ready()
 
@@ -399,6 +399,7 @@ class BaseHumanoid(Humanoid):
             ).sum() / self.actions.numel()
 
     def post_physics_step(self):
+        super().post_physics_step()
         self.progress_buf += 1
 
         if self.world_running():

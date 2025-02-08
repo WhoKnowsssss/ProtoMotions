@@ -41,6 +41,7 @@ from phys_anim.envs.base_interface.isaaclab_utils.robots import (
 from phys_anim.envs.base_interface.isaaclab_utils.domain_rand import (
     randomize_rigid_body_material,
     randomize_rigid_body_mass,
+    randomize_joint_default_pos,
     push_by_setting_velocity,
 )
 from phys_anim.envs.base_interface.common import BaseInterface
@@ -125,8 +126,8 @@ class SimBaseInterface(BaseInterface, Humanoid):
         # ---------------- domain randomization ----------------------
         randomize_rigid_body_material(  
             robot=self.robot, 
-            static_friction_range=(0.01, 0.01),
-            dynamic_friction_range=(0.01, 0.01),
+            static_friction_range=(0.1, 0.6),
+            dynamic_friction_range=(0.1, 0.6),
             restitution_range=(0.0, 0.1),
             num_buckets=64,
             num_envs=self.num_envs, 
@@ -138,6 +139,11 @@ class SimBaseInterface(BaseInterface, Humanoid):
             operation='add',
             num_envs=self.num_envs,
             body_names=['torso', 'pelvis']
+        )
+        randomize_joint_default_pos(
+            robot=self.robot,
+            num_envs=self.num_envs,
+            pos_distribution_params=(-0.05, 0.05),
         )
         self._interval_term_time_left = torch.zeros(1, device=self.device)
 
