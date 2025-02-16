@@ -172,7 +172,8 @@ def compute_humanoid_observations(
         local_key_body_pos.shape[1] * local_key_body_pos.shape[2],
     )
 
-    dof_obs = dof_to_obs(dof_pos, dof_obs_size, dof_offsets, w_last)
+    # dof_obs = dof_to_obs(dof_pos, dof_obs_size, dof_offsets, w_last)
+    dof_obs = dof_pos
 
     obs = torch.cat(
         (
