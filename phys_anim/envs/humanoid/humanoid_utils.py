@@ -172,7 +172,8 @@ def compute_humanoid_observations(
         local_key_body_pos.shape[1] * local_key_body_pos.shape[2],
     )
 
-    dof_obs = dof_to_obs(dof_pos, dof_obs_size, dof_offsets, w_last)
+    # dof_obs = dof_to_obs(dof_pos, dof_obs_size, dof_offsets, w_last)
+    dof_obs = dof_pos
 
     obs = torch.cat(
         (
@@ -208,12 +209,16 @@ def compute_humanoid_observations_max(
     local_root_obs: bool,
     root_height_obs: bool,
     w_last: bool,
+    normalize_heading_only: bool,
 ) -> Tensor:
     root_pos = body_pos[:, 0, :]
     root_rot = body_rot[:, 0, :]
 
     root_h = root_pos[:, 2:3]
-    heading_rot = torch_utils.calc_heading_quat_inv(root_rot, w_last)
+    if normalize_heading_only:
+        heading_rot = torch_utils.calc_heading_quat_inv(root_rot, w_last)
+    else:
+        heading_rot = rotations.quat_conjugate(root_rot, w_last)
 
     if not root_height_obs:
         root_h_obs = torch.zeros_like(root_h)
