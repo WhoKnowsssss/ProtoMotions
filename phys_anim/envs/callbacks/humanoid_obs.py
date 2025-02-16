@@ -59,7 +59,7 @@ class HumanoidObs(BaseCallback):
 
         ground_heights = self.env.terrain_obs_cb.ground_heights_with_scene
 
-        # breakpoint()
+
         if self.config.use_max_coords_obs:
             body_pos = body_pos[env_ids]
             body_rot = body_rot[env_ids]
@@ -80,6 +80,7 @@ class HumanoidObs(BaseCallback):
                 self.config.local_root_obs,
                 self.config.root_height_obs,
                 self.env.w_last,
+                self.config.normalize_heading_only,
             )
             # breakpoint()
         else:
