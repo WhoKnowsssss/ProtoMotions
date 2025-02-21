@@ -249,13 +249,16 @@ def compute_humanoid_observations_max(
         body_rot.shape[0] * body_rot.shape[1], body_rot.shape[2]
     )
     flat_local_body_rot = rotations.quat_mul(flat_heading_rot, flat_body_rot, w_last)
-    flat_local_body_rot_obs = torch_utils.quat_to_tan_norm(flat_local_body_rot, w_last)
+    # flat_local_body_rot_obs = torch_utils.quat_to_tan_norm(flat_local_body_rot, w_last)
+    flat_local_body_rot_obs = torch_utils.quat_to_rot6d(flat_local_body_rot, w_last)
+    
     local_body_rot_obs = flat_local_body_rot_obs.reshape(
         body_rot.shape[0], body_rot.shape[1] * flat_local_body_rot_obs.shape[1]
     )
 
     if not local_root_obs:
-        root_rot_obs = torch_utils.quat_to_tan_norm(root_rot, w_last)
+        # root_rot_obs = torch_utils.quat_to_tan_norm(root_rot, w_last)
+        root_rot_obs = torch_utils.quat_to_rot6d(root_rot, w_last)
         local_body_rot_obs[..., 0:6] = root_rot_obs
 
     flat_body_vel = body_vel.reshape(

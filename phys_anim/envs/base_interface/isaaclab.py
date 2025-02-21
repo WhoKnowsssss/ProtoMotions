@@ -135,7 +135,7 @@ class SimBaseInterface(BaseInterface, Humanoid):
         )
         randomize_rigid_body_mass(
             robot=self.robot,
-            mass_distribution_params=[-5,5],
+            mass_distribution_params=[-2,3],
             operation='add',
             num_envs=self.num_envs,
             body_names=['torso', 'pelvis']
