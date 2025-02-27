@@ -490,7 +490,7 @@ class BaseMimic(MimicHumanoid):  # type: ignore[misc]
             new_times = self.motion_lib.sample_time(
                 new_motion_ids,
                 truncate_time=self.dt,
-            )
+            ) * 0
 
         if self.config.mimic_motion_sampling.init_start_prob > 0:
             init_start = torch.bernoulli(self.init_start_probs[: len(env_ids)])
@@ -589,6 +589,7 @@ class BaseMimic(MimicHumanoid):  # type: ignore[misc]
     def compute_reset(self):
         super().compute_reset()
 
+        self.motion_times[self.reset_buf.bool()] = 0.
         if self.config.mimic_early_termination is not None:
             reward_too_bad = torch.zeros_like(self.reset_buf).bool()
             for entry in self.config.mimic_early_termination:
@@ -615,6 +616,7 @@ class BaseMimic(MimicHumanoid):  # type: ignore[misc]
                 tight_tracking_threshold = torch.logical_and(
                     no_scene_interaction, self.respawned_on_flat
                 )
+                tight_tracking_threshold[:] = 0
 
                 entry_too_bad[tight_tracking_threshold] = entry_on_flat_too_bad[
                     tight_tracking_threshold
@@ -644,6 +646,17 @@ class BaseMimic(MimicHumanoid):  # type: ignore[misc]
         if self.config.mimic_reset_track.reset_episode_on_reset_track:
             self.reset_buf[done_clip] = 1
         done_ids = torch.nonzero(done_clip == 1, as_tuple=False).squeeze(-1)
+
+        if self.config.mimic_early_termination is not None:
+            if sum(reward_too_bad) > 0:
+                print("Early termination due to bad reward: ", torch.nonzero(reward_too_bad, as_tuple=False))
+            if len(done_ids) > 0:
+                print(f"Done clip {done_ids}")
+            self.failed_tracking = reward_too_bad.clone()
+
+            # Reset motion times to 0 for reward too bad clips
+            self.motion_times[reward_too_bad] = 0.
+
         if len(done_ids) > 0:
             self.reset_track(done_ids)
 

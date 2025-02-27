@@ -209,7 +209,7 @@ def compute_humanoid_observations_max(
     local_root_obs: bool,
     root_height_obs: bool,
     w_last: bool,
-    normalize_heading_only: bool,
+    normalize_heading_only: bool = True,
 ) -> Tensor:
     root_pos = body_pos[:, 0, :]
     root_rot = body_rot[:, 0, :]
@@ -250,12 +250,14 @@ def compute_humanoid_observations_max(
     )
     flat_local_body_rot = rotations.quat_mul(flat_heading_rot, flat_body_rot, w_last)
     flat_local_body_rot_obs = torch_utils.quat_to_tan_norm(flat_local_body_rot, w_last)
+    # flat_local_body_rot_obs = torch_utils.quat_to_rot6d(flat_local_body_rot, w_last)
     local_body_rot_obs = flat_local_body_rot_obs.reshape(
         body_rot.shape[0], body_rot.shape[1] * flat_local_body_rot_obs.shape[1]
     )
 
     if not local_root_obs:
-        root_rot_obs = torch_utils.quat_to_tan_norm(root_rot, w_last)
+        # root_rot_obs = torch_utils.quat_to_tan_norm(root_rot, w_last)
+        root_rot_obs = torch_utils.quat_to_rot6d(root_rot, w_last)
         local_body_rot_obs[..., 0:6] = root_rot_obs
 
     flat_body_vel = body_vel.reshape(
@@ -275,6 +277,13 @@ def compute_humanoid_observations_max(
     local_body_ang_vel = flat_local_body_ang_vel.reshape(
         body_ang_vel.shape[0], body_ang_vel.shape[1] * body_ang_vel.shape[2]
     )
+
+    # add domain rand noise
+    # root_h_obs += 0.1 * (2 * torch.rand_like(root_h_obs) - 1)
+    # local_body_pos += 0.1 * (2 * torch.rand_like(local_body_pos) - 1)
+    # local_body_rot_obs += 0.1 * (2 * torch.rand_like(local_body_rot_obs) - 1)
+    # local_body_vel += 0.1 * (2 * torch.rand_like(local_body_vel) - 1)
+    # local_body_ang_vel += 0.2 * (2 * torch.rand_like(local_body_ang_vel) - 1)
 
     obs = torch.cat(
         (

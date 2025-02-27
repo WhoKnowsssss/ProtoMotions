@@ -29,7 +29,7 @@
 import torch
 from torch import Tensor
 import numpy as np
-from isaac_utils.rotations import quat_rotate, quat_from_angle_axis, normalize_angle
+from isaac_utils.rotations import quat_rotate, quat_from_angle_axis, normalize_angle, quaternion_to_matrix
 from typing import Tuple
 
 
@@ -154,6 +154,10 @@ def quat_to_tan_norm(q: Tensor, w_last: bool) -> Tensor:
     norm_tan = torch.cat([tan, norm], dim=len(tan.shape) - 1)
     return norm_tan
 
+@torch.jit.script
+def quat_to_rot6d(q: Tensor, w_last: bool) -> Tensor:
+    rot_mat = quaternion_to_matrix(q, w_last=w_last)  
+    return rot_mat[:,:,[0,1]].view(-1,6)
 
 @torch.jit.script
 def exp_map_to_angle_axis(exp_map: Tensor) -> Tuple[Tensor, Tensor]:

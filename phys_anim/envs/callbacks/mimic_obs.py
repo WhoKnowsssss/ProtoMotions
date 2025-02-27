@@ -86,6 +86,10 @@ class MimicObs(BaseCallback):
             current_state.body_rot[env_ids],
         )
 
+        # add noise
+        # cur_gt += 0.1 * torch.randn_like(cur_gt)
+        # cur_gr += 0.1 * torch.randn_like(cur_gr)
+
         # First remove the height based on the current terrain, then remove the offset to get back to the ground-truth data position
         cur_gt[:, :, -1:] -= self.env.terrain_obs_cb.ground_heights[env_ids].view(
             num_envs, 1, 1

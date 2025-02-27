@@ -38,6 +38,12 @@ class HumanoidObs(BaseCallback):
             dtype=torch.bool,
             device=self.env.device,
         )
+        self.humanoid_obs_all = torch.zeros(
+            self.env.num_envs,
+            num_bodies * 13 + self.env.config.robot.number_of_actions * 2,
+            dtype=torch.float,
+            device=self.env.device,
+        )
 
     def compute_observations(self, env_ids):
         current_state = self.env.get_bodies_state()
@@ -80,9 +86,12 @@ class HumanoidObs(BaseCallback):
                 self.config.local_root_obs,
                 self.config.root_height_obs,
                 self.env.w_last,
-                self.config.normalize_heading_only,
+                # self.config.normalize_heading_only,
             )
             # breakpoint()
+            dof_pos, dof_vel = self.env.get_dof_state()
+            dof_pos = dof_pos[env_ids]
+            dof_vel = dof_vel[env_ids]
         else:
             dof_pos, dof_vel = self.env.get_dof_state()
 
@@ -112,6 +121,17 @@ class HumanoidObs(BaseCallback):
                 self.config.observe_contacts,
                 self.env.w_last,
             )
+
+        # compute humanoid all observations for other policy
+        self.humanoid_obs_all[env_ids] = torch.cat([
+            body_pos.flatten(start_dim=1),
+            body_rot.flatten(start_dim=1),
+            body_vel.flatten(start_dim=1),
+            body_ang_vel.flatten(start_dim=1),
+            dof_pos, 
+            dof_vel, 
+        ], dim=-1)
+
         self.humanoid_obs[env_ids] = obs
 
         root_rot_inv = torch_utils.calc_heading_quat_inv(root_rot, self.env.w_last)
@@ -122,4 +142,5 @@ class HumanoidObs(BaseCallback):
         self.bodies_in_contact[:] = torch.any(torch.abs(body_contacts) > 0.1, dim=-1)
 
     def get_obs(self):
-        return {"humanoid_obs": self.humanoid_obs}
+        return {"humanoid_obs": self.humanoid_obs, 
+                "humanoid_obs_all": self.humanoid_obs_all,}

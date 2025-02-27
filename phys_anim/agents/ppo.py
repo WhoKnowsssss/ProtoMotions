@@ -52,8 +52,35 @@ from phys_anim.utils.running_mean_std import RunningMeanStd
 from phys_anim.agents.callbacks.base_callback import RL_EvalCallback
 from rich.progress import track
 
+from diffusion_policy import DIFFUSION_POLICY_ROOT
+from diffusion_policy.trainer.base_trainer import BaseTrainer
+import dill
+import hydra 
+import collections
+import numpy as np
+
 log = logging.getLogger(__name__)
 
+def load_diffusion_policy(checkpoint_path, checkpoint_tag=None):  
+    if '.ckpt' in checkpoint_path:
+        payload = torch.load(open(checkpoint_path, "rb"), pickle_module=dill)
+    else:
+        assert checkpoint_tag is not None
+        payload = BaseTrainer.load_wandb_checkpoint(checkpoint_path, tag=checkpoint_tag)  
+    cfg = payload["cfg"]
+    cls = hydra.utils.get_class(cfg._target_)
+    
+    # unfreeze cfg
+    trainer: BaseTrainer = cls(cfg, init_wandb=False)
+    trainer.load_payload(payload, exclude_keys=None, include_keys=None)
+    
+    policy = trainer.agent
+    if cfg.training.use_ema:
+        policy = trainer.ema_agent
+    
+    policy.to('cuda')
+    policy.eval()
+    return policy, trainer
 
 def get_params(obj) -> List[nn.Parameter]:
     """
@@ -887,10 +914,205 @@ class PPO:
 
             all_done_indices = dones.nonzero(as_tuple=False)
             done_indices = all_done_indices.squeeze(-1)
+            if len(done_indices) > 0:
+                print("ENV DONE: ", done_indices)
 
             self.post_eval_env_step(actor_outs)
 
             step += 1
+
+        self.post_evaluate_policy()
+
+    def global_to_characterFrame(self, obs, dataset_class, nom_frame_idx):
+        B, H = obs.shape[:2]
+        J = 24 
+        # nominal_frame_idx = 1
+        body_pos = obs[:,:,: 72].view(B, H, J, 3).clone()
+        body_rot = obs[:,:, 72: 72+96].view(B, H, J, 4).clone()
+
+        root_pos = body_pos[:,:,0,:].clone()
+        root_rot = body_rot[:,:,0,:].clone()
+    
+        body_lin_vel = obs[:,:, 168: 168+72].view(B, H, J, 3).clone()
+        body_ang_vel = obs[:,:, 240: 240+72].view(B, H, J, 3).clone()
+        
+        joint_pos = obs[:,:, 312:312+69].view(B, H, -1, 3).clone()
+        joint_vel = obs[:,:, 381: 381+69].view(B, H, -1, 3).clone()
+        
+        handsfeet_idx = dataset_class.ee_idxs()
+        
+        diff_obs = dataset_class.state_normalize(root_pos, root_rot, body_pos, body_rot, body_lin_vel,body_ang_vel, nom_frame_idx, handsfeet_idx, joint_pos)
+        diff_state = joint_pos.reshape(B,H,-1)
+        return diff_obs, diff_state
+
+    @torch.no_grad()
+    def evaluate_sequential_policy(self):
+        self.create_eval_callbacks()
+        self.pre_evaluate_policy()
+
+        file = '/home/haytham/Desktop/DiffuseCloC/outputs/latest.ckpt'
+        policy, trainer = load_diffusion_policy(file)
+        dataset_class = hydra.utils.get_class(trainer.cfg.dataset._target_)
+        policy.set_dataset_class(dataset_class)
+
+        done_indices = []
+        step = 0
+
+        obs = self.create_agent_obs()
+        obs_deque = collections.deque([obs["obs_all"].clone()] * policy.actor.n_past_steps, maxlen = policy.actor.n_past_steps)
+
+        nominal_frame_idx = policy.actor.n_past_steps - 1
+
+        while self.config.max_eval_steps is None or step < self.config.max_eval_steps:
+            self.handle_reset(done_indices)
+
+
+            # Update obs incase any environments were reset
+            obs = self.create_agent_obs()
+
+            obs_deque.append(obs["obs_all"].clone())
+
+            character_frame = obs["obs_all"][:,None,[0,1,2,72,73,74,75]]
+
+            global_obs =  torch.stack(list(obs_deque)).permute((1,0,2))
+            diff_obs, diff_state = self.global_to_characterFrame(global_obs, dataset_class, nominal_frame_idx)
+
+            action, body_pos_global = policy.act({'obs':diff_obs, 'global_root':character_frame})
+            action = action[:,nominal_frame_idx,:]
+            # Obtain actor predictions
+            # actor_outs = self.pre_eval_env_step(obs)
+
+            # Step env
+            rewards, dones, extras = self.env_step(action)
+
+            all_done_indices = dones.nonzero(as_tuple=False)
+            done_indices = all_done_indices.squeeze(-1)
+
+            step += 1
+
+        self.post_evaluate_policy()
+
+
+    @torch.no_grad()
+    def collect_dataset(self):
+        self.create_eval_callbacks()
+        self.pre_evaluate_policy()
+
+        done_indices = []
+        step = 0
+        import zarr
+        import time
+        import numpy as np
+        zroot = zarr.open_group("recorded_data_{}.zarr".format(time.strftime("%H-%M-%S", time.localtime())), "w")
+        
+        zroot.create_group("data")
+        zdata = zroot["data"]
+        
+        zroot.create_group("meta")
+        zmeta = zroot["meta"]
+        
+        zmeta.create_group("episode_ends")
+        
+        zdata.create_group("act")
+        zdata.create_group("body_ang_vel")
+        zdata.create_group("body_lin_vel")
+        zdata.create_group("body_pos")
+        zdata.create_group("body_rot")
+        zdata.create_group("joint_pos")
+        zdata.create_group("joint_vel")
+        zdata.create_group("root_pos")
+        zdata.create_group("root_rot")
+
+        
+        recorded_obs = []
+        recorded_acs = []
+        episode_ends = []
+        
+        recorded_obs_episode = np.zeros((self.num_envs, 2000, self.env.self_obs_cb.humanoid_obs_all.shape[-1]))
+        recorded_acs_episode = np.zeros((self.num_envs, 2000, self.num_act))
+        saved_idx = 0
+        saved_epi = 0
+        saved_motions = {}
+        while self.config.max_eval_steps is None or step < self.config.max_eval_steps:
+
+
+            self.handle_reset(done_indices)
+
+            # Update obs incase any environments were reset
+            obs = self.create_agent_obs()
+            obs_all = obs["obs_all"].clone()
+
+            # Obtain actor predictions
+            actor_outs = self.pre_eval_env_step(obs)
+
+            # Add Actor Noise
+            actor_outs["clean_actions"] = actor_outs["actions"].clone()
+            actor_outs["actions"] = actor_outs["actions"] + torch.normal(0, 0.05, size=actor_outs["actions"].shape).to(self.device)
+
+            # Step env
+            motion_ids = self.env.motion_ids.to("cpu").detach().numpy()
+            rewards, dones, extras = self.env_step(actor_outs["actions"])
+
+            all_done_indices = dones.nonzero(as_tuple=False)
+            done_indices = all_done_indices.squeeze(-1)
+
+            # if len(done_indices) > 0:
+            #     print("ENV DONE: ", done_indices)
+
+            self.post_eval_env_step(actor_outs)
+
+            curr_idx = np.all(recorded_obs_episode == 0, axis=-1).argmax(axis=-1)
+            # curr_idx = idx
+            recorded_obs_episode[np.arange(self.num_envs),curr_idx,:] = obs_all.to("cpu").detach().numpy()
+            recorded_acs_episode[np.arange(self.num_envs),curr_idx,:] = actor_outs["clean_actions"].to("cpu").detach().numpy()
+
+            step += 1
+
+            if len(done_indices) > 0:
+                env_ids = done_indices.to("cpu").detach().numpy()
+                for i in range(len(env_ids)):
+                    # check if successful
+                    from phys_anim.envs.mimic.common import BaseMimic
+                    self.env: BaseMimic
+                    if not self.env.failed_tracking[env_ids[i]]:
+                        if motion_ids[env_ids[i]] not in saved_motions:
+                            saved_motions[motion_ids[env_ids[i]]] = 0
+                        if saved_motions[motion_ids[env_ids[i]]] == 0 or \
+                                saved_motions[motion_ids[env_ids[i]]] <= np.mean(list(saved_motions.values())) + np.std(list(saved_motions.values())):
+                            epi_len = np.all(recorded_obs_episode[env_ids[i]] == 0, axis=-1).argmax(axis=-1) + 1
+                            recorded_obs.append(np.copy(recorded_obs_episode[env_ids[i], :epi_len]))
+                            recorded_acs.append(np.copy(recorded_acs_episode[env_ids[i], :epi_len]))
+                            saved_idx += epi_len
+                            saved_epi += 1
+                            
+                            saved_motions[motion_ids[env_ids[i]]] += 1
+                            episode_ends.append(saved_idx)
+                            print("SAVED: ", env_ids[i], "LEN: ", epi_len, "EPISODES: ", saved_epi, "MOTION NUM: ", len(saved_motions), "MEAN: ", np.mean(list(saved_motions.values())), "MAX: ", max(saved_motions.values()), "MIN: ", min(saved_motions.values()), "STD: ", np.std(list(saved_motions.values())))
+                    else:
+                        print("SKIP DONE: ", env_ids[i], "DUE TO BAD REWARD")
+                    recorded_obs_episode[env_ids[i]] = 0
+                    recorded_acs_episode[env_ids[i]] = 0
+                if saved_epi > 500:
+                    recorded_obs = np.concatenate(recorded_obs)
+                    recorded_acs = np.concatenate(recorded_acs)
+                    episode_ends = np.array(episode_ends)
+
+                    num_bodies = len(self.env.config.robot.isaacgym_body_names)
+                    num_joints = self.env.config.robot.number_of_actions
+
+                    zdata["body_pos"] = recorded_obs[:,:num_bodies*3]
+                    zdata["body_rot"] = recorded_obs[:,num_bodies*3:num_bodies*3+num_bodies*4]
+                    zdata["body_lin_vel"] = recorded_obs[:,num_bodies*7:num_bodies*10]
+                    zdata["body_ang_vel"] = recorded_obs[:,num_bodies*10:num_bodies*13]
+                    zdata["joint_pos"] = recorded_obs[:,num_bodies*13:num_bodies*13+num_joints]
+                    zdata["joint_vel"] = recorded_obs[:,num_bodies*13+num_joints:num_bodies*13+num_joints*2]
+                    zdata["root_pos"] = recorded_obs[:,:num_bodies*3].reshape(-1, num_bodies, 3)[:,0,:].reshape(-1, 3)
+                    zdata["root_rot"] = recorded_obs[:,num_bodies*3:num_bodies*3+num_bodies*4].reshape(-1, num_bodies, 4)[:,0,:].reshape(-1, 4)
+                    zdata["act"] = recorded_acs
+                    zmeta["episode_ends"] = episode_ends
+                    print(zroot.tree())
+                        
+
 
         self.post_evaluate_policy()
 
@@ -918,6 +1140,7 @@ class PPO:
 
     def get_obs_from_env(self, obs):
         obs["obs"] = self.env.self_obs_cb.humanoid_obs
+        obs["obs_all"] = self.env.self_obs_cb.humanoid_obs_all
 
         if self.extra_obs_inputs is not None:
             for key in self.extra_obs_inputs.keys():

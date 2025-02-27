@@ -33,6 +33,39 @@ from pathlib import Path
 import hydra
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
+import torch, copy
+
+class _OnnxPolicyExporter(torch.nn.Module):
+    """Exporter of actor-critic into ONNX file."""
+
+    def __init__(self, actor, normalizer=None, verbose=False):
+        super().__init__()
+        self.verbose = verbose
+        self.actor = copy.deepcopy(actor._original_module)
+        # copy normalizer if exists
+        if normalizer:
+            self.normalizer = copy.deepcopy(normalizer)
+        else:
+            self.normalizer = torch.nn.Identity()
+
+    def forward(self, x):
+        return self.actor.eval_forward(x)
+
+    def export(self, path, filename):
+        self.to("cpu")
+        obs = {'obs': torch.zeros(1, 448),  'mimic_phase': torch.zeros(1,2)}
+        torch.onnx.export(
+            self,
+            {'x': obs},
+            os.path.join(path, filename),
+            export_params=True,
+            opset_version=11,
+            verbose=self.verbose,
+            input_names=["obs"],
+            output_names=["actions"],
+            dynamic_axes={},
+        )
+
 
 has_robot_arg = False
 backbone = None
@@ -117,7 +150,13 @@ def main(override_config: OmegaConf):
     algo.setup()
     algo.load(config.checkpoint)
 
-    algo.evaluate_policy()
+    # _OnnxPolicyExporter(algo.actor).export(
+    #     './policy_output', "policy.onnx"
+    # )
+
+    # algo.evaluate_policy()
+    # algo.collect_dataset()
+    algo.evaluate_sequential_policy()
 
 
 if __name__ == "__main__":

@@ -486,6 +486,10 @@ class BaseHumanoid(Humanoid):
             self.config.enable_height_termination,
             self.termination_heights + self.terrain_obs_cb.ground_heights,
         )
+        if sum(self.reset_buf) > 0:
+            print("Resetting envs: ", self.reset_buf.nonzero(as_tuple=False))
+        if sum(self.terminate_buf) > 0:
+            print("Terminating envs: ", self.terminate_buf.nonzero(as_tuple=False))
 
     def compute_reward(self, actions):
         self.rew_buf[:] = torch.ones(

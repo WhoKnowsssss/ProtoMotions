@@ -126,8 +126,8 @@ class SimBaseInterface(BaseInterface, Humanoid):
         # ---------------- domain randomization ----------------------
         randomize_rigid_body_material(  
             robot=self.robot, 
-            static_friction_range=(0.1, 0.6),
-            dynamic_friction_range=(0.1, 0.6),
+            static_friction_range=(0.05, 0.7),
+            dynamic_friction_range=(0.05, 0.7),
             restitution_range=(0.0, 0.1),
             num_buckets=64,
             num_envs=self.num_envs, 
@@ -135,10 +135,10 @@ class SimBaseInterface(BaseInterface, Humanoid):
         )
         randomize_rigid_body_mass(
             robot=self.robot,
-            mass_distribution_params=[-5,5],
+            mass_distribution_params=[-2,3],
             operation='add',
             num_envs=self.num_envs,
-            body_names=['torso', 'pelvis']
+            body_names=['Torso', 'Pelvis']
         )
         randomize_joint_default_pos(
             robot=self.robot,
@@ -206,21 +206,22 @@ class SimBaseInterface(BaseInterface, Humanoid):
         )
     
     def post_physics_step(self):
-
+        # ------------------ push robots ----------------------
         time_left = self._interval_term_time_left[0]
         # update the time left for each environment
         time_left -= self.dt
         # check if the interval has passed and sample a new interval
         # note: we compare with a small value to handle floating point errors
-        if time_left < 1e-6:
-            lower, upper = [4, 8]
-            sampled_interval = torch.rand(1) * (upper - lower) + lower
-            self._interval_term_time_left[0] = sampled_interval
-            push_by_setting_velocity(
-                robot=self.robot,
-                velocity_range={"x": (-0.5, 0.5), "y": (-0.5, 0.5)},
-                num_envs=self.num_envs,
-            )
+        # if time_left < 1e-6:
+        #     lower, upper = [4, 4]
+        #     sampled_interval = torch.rand(1) * (upper - lower) + lower
+        #     self._interval_term_time_left[0] = sampled_interval
+        #     push_by_setting_velocity(
+        #         robot=self.robot,
+        #         velocity_range={"x": (-0.5, 0.5), "y": (-0.5, 0.5)},
+        #         num_envs=self.num_envs,
+        #     )
+        #     print("push!!!!\n\n")
 
     def write_viewport_to_file(self, file_name):
         from omni.kit.viewport.utility import (
